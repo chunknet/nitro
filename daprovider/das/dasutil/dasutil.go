@@ -114,13 +114,13 @@ func RecoverPayloadFromDasBatch(
 	cert, err := DeserializeDASCertFrom(bytes.NewReader(sequencerMsg[40:]))
 	if err != nil {
 		log.Error("Failed to deserialize DAS message", "err", err)
-		return nil, nil, nil
+		return nil, preimages, nil
 	}
 	version := cert.Version
 
 	if version >= 2 {
 		log.Error("Your node software is probably out of date", "certificateVersion", version)
-		return nil, nil, nil
+		return nil, preimages, nil
 	}
 
 	getByHash := func(ctx context.Context, hash common.Hash) ([]byte, error) {
@@ -167,13 +167,13 @@ func RecoverPayloadFromDasBatch(
 	err = keyset.VerifySignature(cert.SignersMask, cert.SerializeSignableFields(), cert.Sig)
 	if err != nil {
 		log.Error("Bad signature on DAS batch", "err", err)
-		return nil, nil, nil
+		return nil, preimages, nil
 	}
 
 	maxTimestamp := binary.BigEndian.Uint64(sequencerMsg[8:16])
 	if cert.Timeout < maxTimestamp+MinLifetimeSecondsForDataAvailabilityCert {
 		log.Error("Data availability cert expires too soon", "err", "")
-		return nil, nil, nil
+		return nil, preimages, nil
 	}
 
 	dataHash := cert.DataHash
